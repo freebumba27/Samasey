@@ -32,10 +32,13 @@ public class IncomingSms extends BroadcastReceiver {
                     String message = currentMessage.getDisplayMessageBody();
 
                     Log.i("SmsReceiver", "senderNum: " + senderNum + "; message: " + message);
-                    Intent myIntent = new Intent(context, ReplySmsService.class);
-                    myIntent.putExtra("senderNum", senderNum);
-                    myIntent.putExtra("message", message);
-                    context.startService(myIntent);
+
+                    if(message.equalsIgnoreCase("saldo")) {
+                        Intent myIntent = new Intent(context, ReplySmsService.class);
+                        myIntent.putExtra("senderNum", senderNum);
+                        myIntent.putExtra("message", message);
+                        context.startService(myIntent);
+                    }
 
                 } // end for loop
             } // bundle is null

@@ -50,7 +50,6 @@ public class MainActivity extends Activity {
                 SoapObject resultsRequestSOAP = (SoapObject) envelope.bodyIn;
                 String Result = resultsRequestSOAP.getProperty(0).toString();
 
-
                 Log.d("TAG", "Response::" + Result.toString());
                 result = Result.toString();
 
