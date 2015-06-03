@@ -33,7 +33,8 @@ public class IncomingSms extends BroadcastReceiver {
 
                     Log.i("SmsReceiver", "senderNum: " + senderNum + "; message: " + message);
 
-                    if(message.equalsIgnoreCase("saldo")) {
+                    if(message.equalsIgnoreCase("saldo") || message.equalsIgnoreCase("ultima") || message.equalsIgnoreCase("ventas")
+                            || message.contains("Dep") || message.contains("Rec")) {
                         Intent myIntent = new Intent(context, ReplySmsService.class);
                         myIntent.putExtra("senderNum", senderNum);
                         myIntent.putExtra("message", message);

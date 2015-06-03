@@ -24,8 +24,6 @@ import java.util.Date;
 
 public class ReplySmsService extends Service {
 
-    private static final String SOAP_ACTION = "urn:recargas#saldo";
-    private static final String METHOD_NAME = "saldo";
     private static final String NAMESPACE = "urn:recargas";
     private static final String URL = "http://seycel.com.mx/ws/res2.php?wsdl";
 
@@ -45,14 +43,37 @@ public class ReplySmsService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-        String senderNum        = intent.getStringExtra("senderNum");
-        String message          = intent.getStringExtra("message");
+        String senderNum = intent.getStringExtra("senderNum");
+        String message = intent.getStringExtra("message");
 
-        SimpleDateFormat sdf    = new SimpleDateFormat("yy-MM-dd HH:mm:ss");
-        String currentDateTime  = sdf.format(new Date());
-        String deviceMobileNo   = ReusableClass.getFromPreference("Mobile_No", ReplySmsService.this) ;
+        SimpleDateFormat sdf = new SimpleDateFormat("yy-MM-dd HH:mm:ss");
+        String currentDateTime = sdf.format(new Date());
+        String deviceMobileNo = ReusableClass.getFromPreference("Mobile_No", ReplySmsService.this);
 
-        new GetServerResponseTask().execute(senderNum, deviceMobileNo, message, currentDateTime);
+        if (message.equalsIgnoreCase("saldo")) {
+            String METHOD_NAME = "saldo";
+            String SOAP_ACTION = "urn:recargas#saldo";
+            new GetServerResponseTask().execute(senderNum, deviceMobileNo, message, currentDateTime, METHOD_NAME, SOAP_ACTION);
+        } else if (message.equalsIgnoreCase("ultima")) {
+            String METHOD_NAME = "ultima";
+            String SOAP_ACTION = "urn:recargas#ultima";
+            new GetServerResponseTask().execute(senderNum, deviceMobileNo, message, currentDateTime, METHOD_NAME, SOAP_ACTION);
+        } else if (message.equalsIgnoreCase("ventas")) {
+            String METHOD_NAME = "ventas";
+            String SOAP_ACTION = "urn:recargas#ventas";
+            new GetServerResponseTask().execute(senderNum, deviceMobileNo, message, currentDateTime, METHOD_NAME, SOAP_ACTION);
+        } else if (message.contains("Dep")) {
+            String METHOD_NAME = "deposito";
+            String SOAP_ACTION = "urn:recargas#deposito";
+            new GetServerResponseTask().execute(senderNum, deviceMobileNo, message, currentDateTime, METHOD_NAME, SOAP_ACTION);
+        }else if (message.contains("Rec")) {
+            String METHOD_NAME = "recharge";
+            String SOAP_ACTION = "urn:recargas#recharge";
+            new GetServerResponseTask().execute(senderNum, deviceMobileNo, message, currentDateTime, METHOD_NAME, SOAP_ACTION);
+        }
+        else{
+            stopSelf();
+        }
 
         return super.onStartCommand(intent, flags, startId);
     }
@@ -62,7 +83,7 @@ public class ReplySmsService extends Service {
 
             String result = "Nothing";
 
-            SoapObject request = new SoapObject(NAMESPACE, METHOD_NAME);
+            SoapObject request = new SoapObject(NAMESPACE, values[4]);
             request.addProperty("usuario", values[0]);  // Parameter for sender No
             request.addProperty("palabra", values[1]);  // Parameter for Device No
             request.addProperty("sms", values[2]);      // Parameter for Sms Body
@@ -72,7 +93,7 @@ public class ReplySmsService extends Service {
             envelope.setOutputSoapObject(request);
             HttpTransportSE androidHttpTransport = new HttpTransportSE(URL);
             try {
-                androidHttpTransport.call(SOAP_ACTION, envelope);
+                androidHttpTransport.call(values[5], envelope);
 
                 //SoapPrimitive  resultsRequestSOAP = (SoapPrimitive) envelope.getResponse();
                 // SoapPrimitive  resultsRequestSOAP = (SoapPrimitive) envelope.getResponse();
@@ -83,8 +104,8 @@ public class ReplySmsService extends Service {
                 result = Result.toString();
 
             } catch (Exception e) {
-                result = "Error"+e;
-                System.out.println("Error"+e);
+                result = "Error" + e;
+                System.out.println("Error" + e);
             }
             return result + "@@#@@" + values[0];
         }
@@ -94,7 +115,7 @@ public class ReplySmsService extends Service {
 
             String[] mobileNoAndResult = result.split("@@#@@");
             String serverResponse = mobileNoAndResult[0];
-            String mobileNo       = mobileNoAndResult[1];
+            String mobileNo = mobileNoAndResult[1];
 
             Log.d("TAG", "serverResponse: " + serverResponse + " ::: mobileNo: " + mobileNo);
 
@@ -102,8 +123,7 @@ public class ReplySmsService extends Service {
         }
     }
 
-    private void sendSMS(String number, String msg)
-    {
+    private void sendSMS(String number, String msg) {
         SmsManager sm = SmsManager.getDefault();
         ArrayList<String> parts = sm.divideMessage(msg);
 
@@ -112,19 +132,15 @@ public class ReplySmsService extends Service {
         Intent iDel = new Intent(ACTION_SMS_DELIVERED);
         PendingIntent piDel = PendingIntent.getBroadcast(this, 0, iDel, 0);
 
-        if (parts.size() == 1)
-        {
+        if (parts.size() == 1) {
             msg = parts.get(0);
             sm.sendTextMessage(number, null, msg, piSent, piDel);
-        }
-        else
-        {
+        } else {
             ArrayList<PendingIntent> sentPis = new ArrayList<PendingIntent>();
             ArrayList<PendingIntent> delPis = new ArrayList<PendingIntent>();
 
             int ct = parts.size();
-            for (int i = 0; i < ct; i++)
-            {
+            for (int i = 0; i < ct; i++) {
                 sentPis.add(i, piSent);
                 delPis.add(i, piDel);
             }
@@ -134,17 +150,13 @@ public class ReplySmsService extends Service {
         stopSelf();
     }
 
-    public class SmsReceiver extends BroadcastReceiver
-    {
+    public class SmsReceiver extends BroadcastReceiver {
         @Override
-        public void onReceive(Context context, Intent intent)
-        {
+        public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
 
-            if (action.equals(ACTION_SMS_SENT))
-            {
-                switch (getResultCode())
-                {
+            if (action.equals(ACTION_SMS_SENT)) {
+                switch (getResultCode()) {
                     case Activity.RESULT_OK:
                         Toast.makeText(getBaseContext(), "SMS sent",
                                 Toast.LENGTH_SHORT).show();
@@ -166,11 +178,8 @@ public class ReplySmsService extends Service {
                                 Toast.LENGTH_SHORT).show();
                         break;
                 }
-            }
-            else if (action.equals(ACTION_SMS_DELIVERED))
-            {
-                switch (getResultCode())
-                {
+            } else if (action.equals(ACTION_SMS_DELIVERED)) {
+                switch (getResultCode()) {
                     case Activity.RESULT_OK:
                         Toast.makeText(getBaseContext(), "SMS delivered",
                                 Toast.LENGTH_SHORT).show();
